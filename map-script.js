@@ -91,6 +91,62 @@ const hospitals = [
         hasICU: true,
         specialists: ["cardiologist", "obstetrician", "orthopedic", "general"],
         equipment: ["cardiac_monitor", "defibrillator", "obstetric_ultrasound", "orthopedic_tools", "x_ray", "ecg"]
+    },
+    {
+        id: 23, "name": "Lifeline Hospital, Panvel",
+        location: {"type": "Point", "coordinates": [73.1080, 18.9950]},
+        hasICU: True,
+        specialists: ["general", "emergency", "orthopedic", "cardiologist", "general_surgeon", "obstetrician"],
+        equipment: ["ct_scanner", "x_ray", "ultrasound", "ventilator", "defibrillator", "cardiac_monitor"]
+    },
+    {
+        id: 24, "name": "Ashtvinayak Hospital, Panvel",
+        location: {"type": "Point", "coordinates": [73.1150, 18.9890]},
+        hasICU: True,
+        specialists: ["general", "emergency", "pediatrician", "obstetrician", "orthopedic"],
+        equipment: ["x_ray", "ultrasound", "ventilator", "defibrillator", "ecg", "pediatric_ventilator"]
+    },
+    {
+        id: 25, "name": "Gandhi Hospital, Panvel",
+        location: {"type": "Point", "coordinates": [73.1190, 18.9900]}, 
+        hasICU: True, 
+        specialists: ["general", "emergency", "general_surgeon", "orthopedic"],
+        equipment: ["x_ray", "ultrasound", "ecg", "ventilator", "defibrillator"]
+    },
+    {
+        id: 26, "name": "Parulekar Hospital, Panvel",
+        location: {"type": "Point", "coordinates": [73.1100, 18.9910]}, 
+        hasICU: False, 
+        specialists: ["general", "obstetrician"],
+        equipment: ["ultrasound", "ecg", "x_ray"]
+    },
+    {
+        id: 27, "name": "Sukham Hospital, Panvel",
+        location: {"type": "Point", "coordinates": [73.1165, 18.9960]},
+        hasICU: False, 
+        specialists: ["general"],
+        equipment: ["ecg", "ultrasound"]
+    },
+    {
+        id: 28, "name": "Reliance Hospital Navi Mumbai, Koparkhairane",
+        location: {"type": "Point", "coordinates": [73.0050, 19.1250]},
+        hasICU: True,
+        specialists: ["cardiologist", "neurologist", "orthopedic", "general_surgeon", "emergency"],
+        equipment: ["mri", "ct_scanner", "ventilator", "cardiac_monitor", "defibrillator", "x_ray"]
+    },
+     {
+        id: 29, "name": "Apollo Hospitals, Navi Mumbai (Belapur)",
+        location: {"type": "Point", "coordinates": [73.0350, 19.0220]},
+        hasICU: True,
+        specialists: ["cardiologist", "neurologist", "orthopedic", "oncologist", "transplant_surgeon", "emergency"],
+        equipment: ["mri", "ct_scanner", "pet_scanner", "ventilator", "cardiac_monitor", "defibrillator", "x_ray"]
+    },
+     {
+        id: 30, "name": "MGM Hospital & Research Center, Kamothe",
+        location: {"type": "Point", "coordinates": [73.0750, 19.0200]}, 
+        hasICU: True,
+        specialists: ["general", "emergency", "cardiologist", "neurologist", "orthopedic", "pediatrician", "obstetrician"],
+        equipment: ["ct_scanner", "mri", "ventilator", "defibrillator", "cardiac_monitor", "x_ray", "ultrasound"]
     }
 ];
 
