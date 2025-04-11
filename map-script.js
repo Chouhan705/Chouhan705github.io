@@ -356,6 +356,7 @@ function analyzePatientCondition(condition, details) {
 }
 
 // *** MODIFIED: Now returns the full sorted list ***
+// *** MODIFIED: Now handles different coordinate structures and returns normalized data ***
 function findSuitableHospitalsSorted(patientLocation, medicalNeeds) {
     const suitableHospitals = hospitals.filter(hospital => {
         // Check ICU requirement
@@ -364,41 +365,76 @@ function findSuitableHospitalsSorted(patientLocation, medicalNeeds) {
         // Check Specialist requirement
         if (medicalNeeds.needsSpecialist &&
             !hospital.specialists.includes(medicalNeeds.needsSpecialist) &&
-            !hospital.specialists.includes("emergency") &&
-            !hospital.specialists.includes("general")) {
+            !hospital.specialists.includes("emergency") && // Allow emergency as fallback
+            !hospital.specialists.includes("general")) { // Allow general as fallback
             return false;
          }
 
         // Check Equipment requirement (at least one required item must be present)
         if (medicalNeeds.requiredEquipment.length > 0) {
             const hasRequiredEquipment = medicalNeeds.requiredEquipment.some(
-                equipment => hospital.equipment.includes(equipment)
+                equipment => hospital.equipment?.includes(equipment) // Use optional chaining for safety
             );
             if (!hasRequiredEquipment) return false;
         }
 
-        return true; // Hospital meets the criteria
+        // Ensure the hospital has valid coordinate data in *either* format
+        const hasCoords = (typeof hospital.lat === 'number' && typeof hospital.lng === 'number') ||
+                          (hospital.location?.coordinates?.length === 2 &&
+                           typeof hospital.location.coordinates[0] === 'number' &&
+                           typeof hospital.location.coordinates[1] === 'number');
+
+        if (!hasCoords) {
+            console.warn(`Hospital ${hospital.id} (${hospital.name}) skipped due to missing/invalid coordinates.`);
+            return false; // Skip hospitals with no valid coordinates
+        }
+
+
+        return true; // Hospital might meet the criteria (coordinates checked)
     });
 
     if (suitableHospitals.length === 0) {
-        console.warn("No hospitals found matching criteria.");
+        console.warn("No hospitals found matching criteria after filtering.");
         return []; // Return empty array if none found
     }
 
-    // Calculate distance for each suitable hospital
+    // Calculate distance for each suitable hospital and NORMALIZE coordinate access
     const hospitalsWithDistance = suitableHospitals.map(hospital => {
+        // --- Coordinate Normalization ---
+        let hospitalLat, hospitalLng;
+        if (typeof hospital.lat === 'number' && typeof hospital.lng === 'number') {
+            hospitalLat = hospital.lat;
+            hospitalLng = hospital.lng;
+        } else if (hospital.location?.coordinates?.length === 2) {
+            // GeoJSON format: [longitude, latitude]
+            hospitalLng = hospital.location.coordinates[0];
+            hospitalLat = hospital.location.coordinates[1];
+        } else {
+            // Should not happen due to filter above, but good for safety
+             console.error("Error processing coordinates for hospital:", hospital);
+            return { ...hospital, distance: Infinity, lat: undefined, lng: undefined }; // Assign infinity distance if coords fail
+        }
+        // --------------------------------
+
         const distance = calculateDistance(
             patientLocation.lat, patientLocation.lng,
-            hospital.lat, hospital.lng
+            hospitalLat, hospitalLng // Use the extracted coordinates
         );
-        return { ...hospital, distance }; // Include distance property
-    });
+
+        // Return a new object with consistent lat/lng AND the distance
+        return {
+             ...hospital, // Keep original properties
+             lat: hospitalLat, // Ensure top-level lat
+             lng: hospitalLng, // Ensure top-level lng
+             distance: distance // Add distance property
+        };
+    }).filter(h => h.distance !== Infinity); // Remove any hospitals where coord processing failed
 
     // Sort by distance (closest first)
     hospitalsWithDistance.sort((a, b) => a.distance - b.distance);
 
-    console.log("Suitable hospitals sorted by distance:", hospitalsWithDistance);
-    return hospitalsWithDistance; // Return the entire sorted list
+    console.log("Suitable hospitals sorted by distance (normalized coords):", hospitalsWithDistance);
+    return hospitalsWithDistance; // Return the entire sorted list with consistent lat/lng
 }
 
 
@@ -430,6 +466,10 @@ function addUserMarker(lat, lng, label = "Your Location") {
 }
 
 // *** NEW function or modified logic to add hospital markers ***
+// --- Map and UI Functions ---
+// ... (other functions remain the same) ...
+
+// *** MODIFIED: Add permanent tooltips (nametags) to markers ***
 function addHospitalMarkers(hospitalList) {
     // Clear previous hospital markers
     hospitalMarkers.forEach(marker => {
@@ -443,11 +483,22 @@ function addHospitalMarkers(hospitalList) {
         return; // Nothing to add
     }
 
+    // --- Tooltip Options ---
+    const tooltipOptions = {
+        permanent: true,     // <-- Makes the tooltip always visible
+        direction: 'top',   // <-- Position tooltip above the marker icon's anchor
+        offset: [0, -15],    // <-- Adjust offset (x, y) pixels from the anchor. Negative y moves it up.
+        className: 'hospital-label' // <-- Add a CSS class for styling
+    };
+    // --- End Tooltip Options ---
+
+
     // Add marker for the BEST hospital (index 0)
     const bestHospital = hospitalList[0];
     const bestMarker = L.marker([bestHospital.lat, bestHospital.lng], { icon: bestHospitalIcon })
         .addTo(map)
-        .bindPopup(`<b>${bestHospital.name}</b><br><b>Best Match</b> (${bestHospital.distance.toFixed(1)} km)`);
+        .bindPopup(`<b>${bestHospital.name}</b><br><b>Best Match</b> (${bestHospital.distance.toFixed(1)} km)`) // Keep popup for click info
+        .bindTooltip(bestHospital.name, tooltipOptions); // Add the permanent tooltip
     hospitalMarkers.push(bestMarker);
     console.log(`Best hospital marker added for ${bestHospital.name}`);
 
@@ -456,11 +507,14 @@ function addHospitalMarkers(hospitalList) {
         const otherHospital = hospitalList[i];
         const otherMarker = L.marker([otherHospital.lat, otherHospital.lng], { icon: otherHospitalIcon })
             .addTo(map)
-            .bindPopup(`<b>${otherHospital.name}</b><br>Alternative (${otherHospital.distance.toFixed(1)} km)`);
+            .bindPopup(`<b>${otherHospital.name}</b><br>Alternative (${otherHospital.distance.toFixed(1)} km)`) // Keep popup for click info
+            .bindTooltip(otherHospital.name, tooltipOptions); // Add the permanent tooltip
         hospitalMarkers.push(otherMarker);
          console.log(`Other hospital marker added for ${otherHospital.name}`);
     }
 }
+
+// ... (rest of the code remains the same) ...
 
 
 async function getOSRMRoute(userLat, userLng, hospitalLat, hospitalLng) {
